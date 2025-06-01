@@ -1,0 +1,32 @@
+- name: Playbook 3
+  gather_facts: true
+  hosts: all
+  roles:
+  vars:
+    extracts:
+      default:
+        linstor_roles:
+          - satellite
+          - mon
+      server01:
+        linstor_roles: []
+    linstor_roles: "{{ extracts[inventory_hostname]['linstor_roles'] | default(extracts['default']['linstor_roles']) }}"
+  tasks:
+    - name: Oops
+      ansible.builtin.set_fact:
+        cacheable: true
+        linstor_roles: "{{ linstor_roles }}"
+
+    - name: Register loop output as a variable
+      ansible.builtin.set_fact: 
+        yaml_satellite_hosts: |-
+          {% for host in ansible_play_hosts %}
+            {% if 'satellite' in hostvars[host]['ansible_facts']['linstor_roles'] %}
+            - "{{host}}"
+            {% endif %}
+          {% endfor %}
+
+    - name: Log
+      ansible.builtin.debug:
+        msg: "{{item}}"
+      loop: "{{yaml_satellite_hosts | from_yaml}}"

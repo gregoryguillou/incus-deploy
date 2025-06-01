@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Set facts
+  ansible.builtin.set_fact:
+    cacheable: true
+    ceph_fsid: "{{ ceph_fsid | default('') }}"
+    ceph_roles: "{{ ceph_roles | default([]) }}"
+
+- name: Create cluster keys
+  ansible.builtin.import_tasks: create_keys.yml
+  when: "lookup('template', 'ceph.monitors.names.j2') | from_yaml | sort | first == inventory_hostname"

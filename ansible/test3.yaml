@@ -1,0 +1,137 @@
+- name: Displays the ipv6 address or false
+  hosts: server01,server02,server03,server04
+  vars:
+    linstor_roles:
+      - satellite
+  tasks:
+    - name: Set fact for linstor_roles
+      ansible.builtin.set_fact:
+        cacheable: true
+        linstor_roles: "{{ linstor_roles }}"
+
+    - name: Register all satellite hosts for every host
+      ansible.builtin.set_fact:
+        yaml_satellite_hosts: |-
+          {% for playhost in ansible_play_hosts %}
+          {% if 'satellite' in hostvars[playhost]['ansible_facts']['linstor_roles'] %}
+            - "{{playhost}}"
+          {% endif %}
+          {% endfor %}
+
+- name: Displays the ipv6 address or false
+  hosts: server01,server02,server03,server04
+  vars:
+    extracts:
+      server01:
+        ceph_ip_address: ''
+      server02:
+        ceph_ip_address: '127.0.0.1'
+      default:
+        ceph_ip_address: '::1'
+    ceph_ip_address: "{{ extracts[inventory_hostname]['ceph_ip_address'] | default(extracts['default']['ceph_ip_address']) }}"
+    yaml_satellite_hosts: "      - \"server01\"\n      - \"server02\"\n      - \"server03\"\n      - \"server04\"\n      - \"server05\"\n  "
+    output: |-
+      [
+        [
+          {
+              "external_locking": false,
+              "free_capacity": 9223372036854775807,
+              "free_space_mgr_name": "server01;DfltDisklessStorPool",
+              "node_name": "server01",
+              "provider_kind": "DISKLESS",
+              "static_traits": {
+                  "SupportsSnapshots": "false"
+              },
+              "storage_pool_name": "DfltDisklessStorPool",
+              "supports_snapshots": false,
+              "total_capacity": 9223372036854775807,
+              "uuid": "039893c3-0b4c-404a-8fa1-c6ce97a464db"
+          },
+          {
+              "external_locking": false,
+              "free_capacity": 9223372036854775807,
+              "free_space_mgr_name": "server02;DfltDisklessStorPool",
+              "node_name": "server02",
+              "provider_kind": "DISKLESS",
+              "static_traits": {
+                  "SupportsSnapshots": "false"
+              },
+              "storage_pool_name": "DfltDisklessStorPool",
+              "supports_snapshots": false,
+              "total_capacity": 9223372036854775807,
+              "uuid": "9dfdbd36-b27e-447c-8c20-60e334e01b79"
+          },
+          {
+              "external_locking": false,
+              "free_capacity": 9223372036854775807,
+              "free_space_mgr_name": "server03;DfltDisklessStorPool",
+              "node_name": "server03",
+              "provider_kind": "DISKLESS",
+              "static_traits": {
+                  "SupportsSnapshots": "false"
+              },
+              "storage_pool_name": "DfltDisklessStorPool",
+              "supports_snapshots": false,
+              "total_capacity": 9223372036854775807,
+              "uuid": "1919cb27-4763-4227-b252-a1551dc8d166"
+          },
+          {
+              "external_locking": false,
+              "free_capacity": 9223372036854775807,
+              "free_space_mgr_name": "server04;DfltDisklessStorPool",
+              "node_name": "server04",
+              "provider_kind": "DISKLESS",
+              "static_traits": {
+                  "SupportsSnapshots": "false"
+              },
+              "storage_pool_name": "DfltDisklessStorPool",
+              "supports_snapshots": false,
+              "total_capacity": 9223372036854775807,
+              "uuid": "734fa737-e09a-461e-aeb8-af2b4cdd0a6f"
+          },
+          {
+              "external_locking": false,
+              "free_capacity": 9223372036854775807,
+              "free_space_mgr_name": "server05;DfltDisklessStorPool",
+              "node_name": "server05",
+              "provider_kind": "DISKLESS",
+              "static_traits": {
+                  "SupportsSnapshots": "false"
+              },
+              "storage_pool_name": "DfltDisklessStorPool",
+              "supports_snapshots": false,
+              "total_capacity": 9223372036854775807,
+              "uuid": "b0db8d9d-6ceb-4780-8d59-4c363f2783e5"
+          }
+        ]
+      ]
+  tasks:
+    - name: Oops
+      ansible.builtin.debug:
+        msg: >-
+          {{
+            yaml_satellite_hosts | from_yaml | difference(
+              output | from_json | json_query('[0][?linstor_pool_driver!=`DISKLESS`].node_name')
+            )
+          }}
+
+    - name: Oops2
+      ansible.builtin.debug:
+        msg: >-
+          {{
+            yaml_satellite_hosts | from_yaml | difference(
+              output | from_json | json_query('[0][?provider_kind!=`DISKLESS`].node_name')
+            )
+          }}
+
+    - name: Succeeds
+      ansible.builtin.debug:
+        msg: "{{ undef() | default(undef()) | default('') | ansible.utils.ipv6 }}"
+
+    - name: Would detect ipv6 with a default
+      ansible.builtin.debug:
+        msg: "{{ '' | default('::1', true) | default('') | ansible.utils.ipv6 }}"
+
+    - name: Would not detect ipv6 with a default
+      ansible.builtin.debug:
+        msg: "{{ '' | default('::1') | default('', true) | ansible.utils.ipv6 }}"

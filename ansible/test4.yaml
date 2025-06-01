@@ -1,0 +1,62 @@
+- name: Displays the ipv6 address or false
+  hosts: server01,server02,server03,server04
+  tasks:
+    - name: Register all satellite hosts for every host
+      vars:
+        incus_ip_address_or_default: 1.1
+        cluster_add_stdout: 1
+        storage:
+          v1:
+            local_config: 
+              k1: val1
+          v2:
+            local_config:
+              k1: val1
+        networks:
+          v1:
+            local_config:
+              k1: val1
+          v2:
+            local_config:
+              k1: val1
+      ansible.builtin.debug:
+        msg: |-
+          cluster:
+            enabled: true
+            cluster_address: {{ incus_ip_address_or_default }}
+            cluster_token: {{ cluster_add_stdout }}
+            server_address: {{ incus_ip_address_or_default }}
+            member_config:
+            {%- for pool in storage %}
+            {%- for key in storage[pool].local_config | default([]) %}
+
+              - entity: storage-pool
+                name: {{ pool }}
+                key: {{ key }}
+                value: {{ storage[pool].local_config[key] }}
+            {%- endfor %}
+            {%- endfor %}
+            {%- for network in networks %}
+            {%- for key in networks[network].local_config | default([]) %}
+
+              - entity: network
+                name: {{ network }}
+                key: {{ key }}
+                value: {{ networks[network].local_config[key] }}
+            {%- endfor %}
+            {%- endfor %}
+
+    - name: Oops2
+      vars:
+        data1:
+          k1: v1
+          k2: v2
+          k3: v3
+        data2:
+          k1: v1
+          k2: v2
+      ansible.builtin.debug:
+        msg: >-
+          oops{% for k in data1 | default([]) %}
+          {{ k }}={{ data1[k] }}{% endfor %}{% for k in data2 | default([]) %}
+          {{ k }}={{ data2[k] }}{% endfor %}

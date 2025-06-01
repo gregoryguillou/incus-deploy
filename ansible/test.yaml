@@ -1,0 +1,63 @@
+- name: Playbook 1
+  gather_facts: true
+  hosts: server01,server02
+  vars:
+    variants:
+      default:
+        value1: 1
+        value2: "2"
+      server01:
+        value1: "X"
+    value1: "{{ variants[inventory_hostname].value1 | default(variants['default'].value1) }}"
+  tasks:
+    - name: Set facts
+      ansible.builtin.set_fact:
+        valuex: "{{ value1 }}"
+
+    - name: Debug valuez
+      vars:
+        value: "{{ undef() | default('1') }}"
+      ansible.builtin.debug:
+        msg: "{{ value }}"
+
+    - name: Debug valuex
+      ansible.builtin.debug:
+        msg: "{{ valuex }}"
+
+    - name: Set facts
+      ansible.builtin.set_fact:
+        cacheable: true
+        valuey: "{{ value1 }}"
+
+    - name: Debug valuey
+      ansible.builtin.debug:
+        msg: "{{ ansible_facts.valuey }}"
+
+    - name: Print facts
+      ansible.builtin.debug:
+        msg: "{{ item }}: {{ hostvars[item]['ansible_facts']['valuey'] | default('unknown') }}"
+      loop: "{{ groups['all'] }}"
+      # with_items: "{{ ansible_play_hosts }}"
+
+- name: Playbook 2
+  hosts: server01,server02
+  tasks:
+    - name: Print facts
+      ansible.builtin.debug:
+        msg: "{{ item }}: {{ hostvars[item]['ansible_facts']['valuey'] | default('unknown') }}"
+      loop: "{{ groups['all'] }}"
+
+- name: Playbook 3
+  gather_facts: true
+  hosts: all
+  roles:
+    - role: lxc.incus.test
+  vars:
+    extracts:
+      default:
+        ceph_roles:
+          - mon
+      server01:
+        ceph_roles: []
+    ceph_fsid: "123"
+    ceph_roles: "{{ extracts[inventory_hostname]['ceph_roles'] | default(extracts['default']['ceph_roles']) }}"

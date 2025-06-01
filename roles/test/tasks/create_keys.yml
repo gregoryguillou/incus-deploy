@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Add nodes to mon map (remote)
+  ansible.builtin.debug:
+    msg: "{{ item.name }}: {{ item.ip }}"
+  loop: "{{ lookup('template', 'ceph.monitors.j2') | from_yaml | default([]) }}"
+  changed_when: true
+
+- name: Add nodes to mon map (remote)
+  ansible.builtin.debug:
+    msg: "{{ item.name }}: {{ item.ip }}"
+  loop:
+    - { name: "x", ip: 'y'}
+  changed_when: true
