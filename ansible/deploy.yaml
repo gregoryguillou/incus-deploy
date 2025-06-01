@@ -1,5 +1,20 @@
 - import_playbook: books/local.early.yaml
 
+- name: Set variables from configuration files
+  hosts: all
+  gather_facts: yes
+  gather_subset:
+    - "distribution_release"
+  tasks:
+    - ansible.builtin.include_vars: "{{ item }}"
+      with_first_found:
+        - paths:
+          - vars
+        - files:
+          - "{{ ansible_distribution | lower }}-{{ ansible_distribution_version }}.yml"
+          - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+          - "{{ ansible_distribution | lower }}.yml"
+
 - name: Install and configure Incus and its whole stack
   hosts: all
   collections:
@@ -11,17 +26,18 @@
     - "default_ipv6"
     - "distribution_release"
   any_errors_fatal: true
-  vars:
-    config_root_dir: "{{ '.' | ansible.builtin.realpath }}" 
   roles:
     - role: system_settings
     - role: netplan
+      when: ansible_distribution in ("Ubuntu", "Debian")
     - role: ntp
     - role: nvme
     - role: ceph
     - role: linstor
+      when: ansible_distribution == "Ubuntu" and ansible_distribution_version in ("22.04", "24.04")
     - role: lvmcluster
     - role: ovn
+      when: ansible_distribution in ("Ubuntu", "Debian")
     - role: incus
 
 - import_playbook: books/local.late.yaml
