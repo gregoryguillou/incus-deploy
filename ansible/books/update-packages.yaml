@@ -1,0 +1,44 @@
+- name: Apply all updates
+  hosts: all
+  gather_facts: true
+  gather_subset:
+    - "distribution_release"
+  order: shuffle
+  any_errors_fatal: true
+  tasks:
+    - name: Check if distribution is supported
+      ansible.builtin.meta: end_play
+      when: 'ansible_distribution not in ("Ubuntu", "Debian")'
+
+    - name: Update apt repo and cache on all Debian/Ubuntu boxes
+      ansible.builtin.apt:
+        force_apt_get: true
+        update_cache: true
+        cache_valid_time: 1800
+
+    - name: Upgrade all packages on servers
+      ansible.builtin.apt:
+        force_apt_get: true
+        upgrade: dist
+        purge: true
+
+    - name: Clean unused packages
+      ansible.builtin.apt:
+        force_apt_get: true
+        autoremove: true
+        purge: true
+
+    - name: Clean leftover packages
+      ansible.builtin.apt:
+        force_apt_get: true
+        autoclean: true
+
+# ansible.builtin.reboot module does not work as expected probably due to the
+# warning below, happening when triggering it:
+# Warning: : Reset is not implemented for this connection
+- name: Poweroff to the upgraded servers
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Shutdown to the upgraded servers
+      community.general.shutdown:

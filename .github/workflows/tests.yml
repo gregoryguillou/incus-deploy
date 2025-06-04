@@ -67,6 +67,28 @@ jobs:
           sleep 5m
           incus list
 
+      - name: Upgrade and restart VMs
+        run: |
+          cd ansible
+
+          ansible-galaxy install -r ansible_requirements.yml
+
+          if [ "${{ matrix.os }}" = "centos/9-Stream" ]; then
+            cp hosts.yaml.example.centos hosts.yaml
+          else
+            cp hosts.yaml.example hosts.yaml
+            ansible-playbook books/update-packages.yaml
+            export INCUS_PROJECT=dev-incus-deploy
+            echo "Wait 1 min and check VMs are off"
+            sleep 1m
+            incus list
+            incus start server01 server02 server03 server04 server05
+            echo "Wait 2 min and check VMs are started"
+            sleep 2m
+            incus list
+          fi
+          cd ..
+
       - name: Deploy the test VMs
         run: |
           cd ansible
@@ -75,8 +97,6 @@ jobs:
           else
             cp hosts.yaml.example hosts.yaml
           fi
-
-          ansible-playbook tasks/update-packages.yaml
 
           if [ "${{ matrix.os }}" != "ubuntu/22.04" ] && [ "${{ matrix.os }}" != "ubuntu/24.04" ]; then
             # Linstor is only available on jammy and noble.
@@ -90,8 +110,6 @@ jobs:
             # ZFS on Debian needs compiling which is slow, use btrfs instead
             sed -i "s/driver: zfs/driver: btrfs/g" hosts.yaml
           fi
-
-          ansible-galaxy install -r ansible_requirements.yml
 
           ansible-playbook deploy.yaml
 
