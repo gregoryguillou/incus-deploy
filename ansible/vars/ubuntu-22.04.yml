@@ -1,4 +1,3 @@
-
 # Global variables
 config_root_dir: "{{ '.' | ansible.builtin.realpath }}"
 ceph_fsid: "e2850e1f-7aab-472e-b6b1-824e19a75071"

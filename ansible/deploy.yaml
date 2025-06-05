@@ -1,43 +1,44 @@
-- import_playbook: books/local.early.yaml
+- name: Playbook to run system pre-requisites
+  import_playbook: books/local.early.yaml
 
 - name: Set variables from configuration files
   hosts: all
-  gather_facts: yes
+  gather_facts: true
   gather_subset:
     - "distribution_release"
   tasks:
-    - ansible.builtin.include_vars: "{{ item }}"
+    - name: Set variables based on distribution and version
+      ansible.builtin.include_vars: "{{ item }}"
       with_first_found:
         - paths:
-          - vars
+            - vars
         - files:
-          - "{{ ansible_distribution | lower }}-{{ ansible_distribution_version }}.yml"
-          - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
-          - "{{ ansible_distribution | lower }}.yml"
+            - "{{ ansible_distribution | lower }}-{{ ansible_distribution_version }}.yml"
+            - "{{ ansible_distribution | lower }}-{{ ansible_distribution_major_version }}.yml"
+            - "{{ ansible_distribution | lower }}.yml"
 
 - name: Install and configure Incus and its whole stack
   hosts: all
-  collections:
-    - lxc.incus
   order: shuffle
-  gather_facts: yes
+  gather_facts: true
   gather_subset:
     - "default_ipv4"
     - "default_ipv6"
     - "distribution_release"
   any_errors_fatal: true
   roles:
-    - role: system_settings
-    - role: netplan
+    - role: lxc.incus.system_settings
+    - role: lxc.incus.netplan
       when: ansible_distribution in ("Ubuntu", "Debian")
-    - role: ntp
-    - role: nvme
-    - role: ceph
-    - role: linstor
+    - role: lxc.incus.ntp
+    - role: lxc.incus.nvme
+    - role: lxc.incus.ceph
+    - role: lxc.incus.linstor
       when: ansible_distribution == "Ubuntu" and ansible_distribution_version in ("22.04", "24.04")
-    - role: lvmcluster
-    - role: ovn
+    - role: lxc.incus.lvmcluster
+    - role: lxc.incus.ovn
       when: ansible_distribution in ("Ubuntu", "Debian")
-    - role: incus
+    - role: lxc.incus.incus
 
-- import_playbook: books/local.late.yaml
+- name: Playbook that runs post-installation and configuration
+  import_playbook: books/local.late.yaml
