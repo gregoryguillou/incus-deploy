@@ -11,3 +11,6 @@
     - Transfer netplan configuration
   changed_when: netplan_main_file.stat.exists
   when: 'ansible_distribution in ("Ubuntu", "Debian")'
+
+- name: Force Flush
+  ansible.builtin.meta: flush_force
