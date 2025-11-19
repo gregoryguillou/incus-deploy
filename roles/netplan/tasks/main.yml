@@ -13,4 +13,4 @@
   when: 'ansible_distribution in ("Ubuntu", "Debian")'
 
 - name: Force Flush
-  ansible.builtin.meta: flush_force
+  ansible.builtin.meta: flush_handlers
